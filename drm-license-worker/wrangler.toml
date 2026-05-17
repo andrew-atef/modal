@@ -1,0 +1,11 @@
+name = "drm-license-worker"
+main = "src/index.ts"
+compatibility_date = "2024-05-16"
+
+[vars]
+# JWT_SECRET should be set via wrangler secret put JWT_SECRET
+# ALLOWED_DOMAINS = "https://yourdomain.com"
+
+[[kv_namespaces]]
+binding = "VIDEO_KEYS"
+id = "53f90cdadb5f4286ad2231888f19e9e6"

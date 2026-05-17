@@ -212,6 +212,25 @@ def run_transcoding(data: dict):
                 raise RuntimeError(f"Shaka Streamer Engine failed with error status.")
             time.sleep(5)
 
+        # Diagnostics: Read generated manifest files (DASH .mpd or HLS .m3u8) to inspect KID
+        print("[*] Performing post-transcoding manifest forensics...")
+        try:
+            import re
+            manifest_files = list(local_output_dir.glob("**/*.mpd")) + list(local_output_dir.glob("**/*.m3u8"))
+            for mf in manifest_files:
+                if mf.is_file():
+                    content = mf.read_text(errors='ignore')
+                    # Search for default_KID in DASH
+                    dash_kid = re.search(r'default_KID="([^"]+)"', content)
+                    if dash_kid:
+                        print(f"[Diagnostics] Found KID in DASH Manifest {mf.name}: {dash_kid.group(1)}")
+                    # Search for key URI or keyformat in HLS
+                    hls_key = re.search(r'#EXT-X-KEY:.*', content)
+                    if hls_key:
+                        print(f"[Diagnostics] Found HLS Key Tag in {mf.name}: {hls_key.group(0)}")
+        except Exception as diag_err:
+            print(f"[!] Manifest diagnostics failed: {diag_err}")
+
         # 5. رفع النتائج النهائية لـ R2 بالتوازي (High-Performance Engine)
         print("[*] Uploading final segments to R2 (100 Concurrent Workers)...")
         all_files = [f for f in local_output_dir.glob("**/*") if f.is_file()]
@@ -249,16 +268,13 @@ def run_transcoding(data: dict):
         with ThreadPoolExecutor(max_workers=100) as executor:
             sizes = list(executor.map(upload_worker, all_files))
             total_bytes = sum(sizes)
+        
+        # حساب عدد الأجزاء (Segments) للتراخيص والفوترة من جميع المجلدات الفرعية
+        segment_count = len(list(local_output_dir.rglob("*.m4s")))
 
-        # 6. إرسال Webhook النجاح مع التقرير المالي
+        # 6. إرسال Webhook النجاح مع البيانات الخام (Raw Telemetry) للفوترة في Laravel
         manager_duration = time.perf_counter() - start_time
-        
-        # حساب التكلفة بناءً على الموارد المستخدمة (14 CPU & 16GB RAM)
-        cpu_rate = float(os.environ.get("MODAL_CPU_RATE", "0.0000131"))
-        mem_rate = float(os.environ.get("MODAL_MEM_RATE", "0.00000222"))
-        cost_usd = round(manager_duration * ((14.0 * cpu_rate) + (16.0 * mem_rate)), 4)
-        
-        print(f"[*] Success! Total duration: {round(manager_duration, 2)}s, Estimated Cost: ${cost_usd}")
+        print(f"[*] Success! Total duration: {round(manager_duration, 2)}s")
 
         if callback_url:
             webhook_payload = {
@@ -268,8 +284,11 @@ def run_transcoding(data: dict):
                 "drm": {"key": drm_key, "kid": drm_kid},
                 "storage_size_mb": round(total_bytes / (1024*1024), 2),
                 "metrics": {
+                    "compute_cpu": 14.0,
+                    "compute_mem_gb": 16.0,
                     "duration_seconds": round(manager_duration, 2),
-                    "cost_usd": cost_usd
+                    "segment_count": segment_count,
+                    "resolutions": target_resolutions
                 }
             }
             
