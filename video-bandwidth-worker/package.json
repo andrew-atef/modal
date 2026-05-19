@@ -1,0 +1,17 @@
+{
+  "name": "video-bandwidth-worker",
+  "version": "1.0.0",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240512.0",
+    "typescript": "^5.4.5",
+    "wrangler": "^3.55.0"
+  },
+  "dependencies": {
+    "jose": "^5.2.4"
+  },
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "start": "wrangler dev"
+  }
+}
