@@ -10,6 +10,10 @@ compatibility_date = "2024-05-16"
 binding = "VIDEO_KEYS"
 id = "53f90cdadb5f4286ad2231888f19e9e6"
 
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "vid"
+
 # Optional: Enable for auditing key access events in Cloudflare Dashboard
 # [[analytics_engine_datasets]]
 # binding = "WAE"

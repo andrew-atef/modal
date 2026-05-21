@@ -1,0 +1,10 @@
+name = "player-worker"
+main = "src/index.ts"
+compatibility_date = "2024-05-16"
+
+[vars]
+# Optional config or secrets if needed, but not strictly required
+
+[[kv_namespaces]]
+binding = "VIDEO_KEYS"
+id = "53f90cdadb5f4286ad2231888f19e9e6"
